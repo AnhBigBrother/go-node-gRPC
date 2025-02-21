@@ -1,3 +1,6 @@
 node_modules
 .env*
 bin
+cert/*.pem
+cert/*.cnf
+cert/*.srl

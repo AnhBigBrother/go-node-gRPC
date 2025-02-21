@@ -1,19 +1,33 @@
 import parseArgs from "minimist"
 import { GreeterClient, HelloRequest, HelloReply } from "./proto/helloworld"
 import * as grpc from "@grpc/grpc-js"
+import { readFileSync } from "node:fs"
 
 async function wait(time: number) {
   return new Promise((resolve) => setTimeout(resolve, time))
 }
 
 function runSayHello(client: GreeterClient, request: HelloRequest) {
-  client.sayHello(request, function (err: grpc.ServiceError | null, response: HelloReply) {
-    console.log("Received from server:", response.message)
-  })
+  const metaData = new grpc.Metadata()
+  metaData.add("authorization", "supersecret")
+  metaData.add("description", "this is a unary request")
+
+  client.sayHello(
+    request,
+    metaData,
+    function (err: grpc.ServiceError | null, response: HelloReply) {
+      console.log("Received from server:", response?.message)
+    }
+  )
 }
 
 function runStreamRequest(client: GreeterClient, request: HelloRequest) {
+  const metaData = new grpc.Metadata()
+  metaData.add("authorization", "supersecret")
+  metaData.add("description", "this is a stream request")
+
   const streamRequest = client.sayHelloStreamRequest(
+    metaData,
     (err: grpc.ServiceError | null, response: HelloReply) => {
       if (err) {
         console.log(err)
@@ -23,27 +37,28 @@ function runStreamRequest(client: GreeterClient, request: HelloRequest) {
     }
   )
 
-  const streamWrite = async (num: number) => {
+  const writeAsync = async (num: number) => {
     streamRequest.write({
       message: `${request.message} no.${num}`,
     })
   }
-  const streamConcurent = async () => {
+  const streamAsync = async () => {
     for (let i = 0; i < 10; i++) {
-      await streamWrite(i + 1)
+      await writeAsync(i + 1)
       await wait(500)
     }
     streamRequest.end()
   }
 
-  streamConcurent()
+  streamAsync()
 }
 
 function runStreamReply(client: GreeterClient, request: HelloRequest) {
-  const streamReply = client.sayHelloStreamReply(
-    request,
-    new grpc.Metadata({ cacheableRequest: false })
-  )
+  const metaData = new grpc.Metadata()
+  metaData.add("authorization", "supersecret")
+  metaData.add("description", "this is a stream request")
+
+  const streamReply = client.sayHelloStreamReply(request, metaData)
   streamReply.on("data", (data) => {
     console.log("Received from server:", data.message)
   })
@@ -56,7 +71,11 @@ function runStreamReply(client: GreeterClient, request: HelloRequest) {
 }
 
 function runBidirectionalStreaming(client: GreeterClient, request: HelloRequest) {
-  const stream = client.sayHelloBidirectionalStreaming()
+  const metaData = new grpc.Metadata()
+  metaData.add("authorization", "supersecret")
+  metaData.add("description", "this is a bidirection stream request")
+
+  const stream = client.sayHelloBidirectionalStreaming(metaData)
   stream.on("data", (data) => {
     console.log("Received from server:", data.message)
   })
@@ -64,20 +83,25 @@ function runBidirectionalStreaming(client: GreeterClient, request: HelloRequest)
     console.log("ended")
   })
 
-  const streamWrite = async (i: number) => {
+  const writeAsync = async (i: number) => {
     stream.write({
       message: `${request.message} no.${i}`,
     })
   }
-  const streamConcurent = async () => {
+  const streamAsync = async () => {
     for (let i = 0; i < 10; i++) {
-      await streamWrite(i + 1)
+      await writeAsync(i + 1)
       await wait(500)
     }
     stream.end()
   }
 
-  streamConcurent()
+  streamAsync()
+}
+
+function loadCreadential(): grpc.ChannelCredentials {
+  const rootCert = readFileSync("../cert/ca-cert.pem")
+  return grpc.credentials.createSsl(rootCert)
 }
 
 function main() {
@@ -85,7 +109,7 @@ function main() {
     string: ["target", "cmd"],
   })
 
-  let target = "localhost:50051"
+  let target = "localhost:8080"
   if (args.target) {
     target = args.target
   }
@@ -96,7 +120,7 @@ function main() {
     cmd = args.cmd
   }
 
-  const client = new GreeterClient(target, grpc.credentials.createInsecure())
+  const client = new GreeterClient(target, loadCreadential())
   const request: HelloRequest = {
     message: "Hello from client",
   }

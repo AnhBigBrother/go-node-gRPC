@@ -1,6 +1,6 @@
 # Go-Node gRPC
 
-Helloworld example to learn gRPC with Node.js + Typescript on the client and Golang on the server.
+Helloworld example to learn gRPC with Node.js + Typescript on the client and Golang on the server, Server authentication with SSL/TLS.
 
 Protoc plugin for TypeScript: [ts-proto](https://www.npmjs.com/package/ts-proto)
 
@@ -12,24 +12,22 @@ Protoc plugin for TypeScript: [ts-proto](https://www.npmjs.com/package/ts-proto)
   git clone git@github.com:AnhBigBrother/go-node-gRPC.git
   ```
 
-- Setup server:
+- Gen proto, certificate & install dependencies:
 
   ```bash
-  cd server
-  sh gen_proto.sh
-  go mod tidy
-  go run main.go
+  make setup
   ```
 
-- Setup client:
+- Run server:
+
+  ```bash
+  make server
+  ```
+
+- Run client(on another terminal):
 
   ```bash
   cd client
-  npm install
-  sh gen_proto.sh
-  ```
-
-  ```bash
   npx ts-node main.ts [cmd] [your_message_to_server] 
   # Avaiable cmd: say_hello, stream_reply, stream_request, bidirection_stream
   # Example: npx ts-node main.ts --cmd=stream_request 'Hello from me'
