@@ -1,6 +1,6 @@
 # Go-Node gRPC
 
-Helloworld example to learn gRPC with Node.js + Typescript on the client and Golang on the server, Server authentication with SSL/TLS.
+Helloworld example to learn gRPC, with Node.js + Typescript on the client and Golang on the server, secure gRPC connection with SSL/TLS.
 
 Protoc plugin for TypeScript: [ts-proto](https://www.npmjs.com/package/ts-proto)
 
